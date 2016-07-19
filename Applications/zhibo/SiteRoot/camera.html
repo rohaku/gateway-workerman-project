@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>直播录像界面</title>
+    <style type="text/css">
+        #sourceVid{
+            display:block;
+            margin:0 auto;
+        }
+        p.notice{
+            width:80%;
+            margin-left:auto;
+            margin-right:auto;
+        }
+        #outPutSource{
+            display:none;
+        }
+    </style>
+</head>
+<body>
+    <video autoplay id="sourceVid" style="width:480px; height:360px;" />
+    <p class="notice">提示：最好用火狐测试，谷歌浏览器升级了安全策略，谷歌浏览器只能在https下才能利用html5打开摄像头。</p>
+    <canvas id="outPutSource"></canvas>
+
+    <script type="text/javascript">
+        var socket = new WebSocket("ws://" + document.domain + ":18880");
+        var back = document.getElementById("outPutSource");
+        var backcontext = back.getContext("2d");
+
+        var video = document.getElementById("sourceVid");
+        var success = function(stream){
+            video.src = window.URL.createObjectURL(stream);
+        };
+
+        socket.onopen = function(){
+          draw();
+        };
+
+        var draw =function(){
+            try{
+                backcontext.drawImage(video, 0, 0, back.width, back.height);
+            }catch(e){
+                if(e.name == "NS_ERROR_NOT_AVAILABLE"){
+                    return setTimeout(draw, 100);
+                }else{
+                    throw e;
+                }
+            }
+
+            if(video.src){
+                socket.send(back.toDataURL("image/jpeg", .5));
+
+            }
+            setTimeout(draw, 100);
+
+            navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia ||
+            navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+            navigator.getUserMedia({video: true, audio: false}, success, console.log);
+        };
+    </script>
+</body>
+</html>
